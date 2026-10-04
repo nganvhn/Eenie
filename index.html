@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>eenie. — random picker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#0b0b0b;--paper:#f2f2ef;--muted:#6b6b68;--faint:#9a9a96;--sans:'Bricolage Grotesque',sans-serif;--mono:'DM Mono',monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);-webkit-font-smoothing:antialiased}
+a{color:var(--ink)}a:hover{color:#555}
+input::placeholder{color:var(--faint)}
+input:focus{outline:none}
+button{font-family:var(--sans)}
+*::-webkit-scrollbar{width:8px}*::-webkit-scrollbar-thumb{background:#ddd;border-radius:8px}
+
+.app{min-height:100vh;font-family:var(--sans);color:var(--ink);display:flex;flex-direction:column}
+.label{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+
+/* header */
+.top{display:flex;align-items:center;justify-content:space-between;padding:22px 40px;gap:24px;flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:12px}
+.logo{font-size:32px;font-weight:800;letter-spacing:-.05em}
+.modes-wrap{display:flex;align-items:center;gap:12px}
+.seg{display:flex;gap:4px;padding:4px;background:#fff;border:1.5px solid var(--ink);border-radius:999px}
+.seg button{border:0;cursor:pointer;font-weight:600;font-size:15px;padding:9px 18px;border-radius:999px;background:transparent;color:var(--ink);transition:background .2s,color .2s}
+.seg button.on{background:var(--ink);color:#fff}
+
+/* layout */
+main{flex:1;display:grid;grid-template-columns:minmax(320px,400px) minmax(0,1fr);gap:20px;padding:0 40px 40px;min-height:0}
+
+/* left panel */
+aside{background:#fff;border:1.5px solid var(--ink);border-radius:32px;padding:28px;display:flex;flex-direction:column;gap:22px}
+.col{display:flex;flex-direction:column}
+h1{margin:0;font-size:40px;line-height:1;font-weight:800;letter-spacing:-.035em;text-wrap:pretty}
+form{display:flex;gap:8px;margin:0}
+.q{flex:1;min-width:0;font-family:var(--sans);font-size:17px;padding:14px 18px;border:1.5px solid var(--ink);border-radius:999px;background:#fff;color:var(--ink)}
+.go{border:0;cursor:pointer;background:var(--ink);color:#fff;font-weight:600;font-size:16px;padding:0 22px;border-radius:999px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{cursor:pointer;font-size:14px;font-weight:600;padding:7px 14px;border-radius:999px;border:1.5px solid var(--ink);background:#fff;color:var(--ink)}
+.chip.on{background:var(--ink);color:#fff}
+.status{font-family:var(--mono);font-size:13px;color:var(--ink)}
+.status.err{color:#b3261e}
+.rule{height:1.5px;background:var(--ink);opacity:.1}
+.list{display:flex;flex-direction:column;gap:2px;overflow-y:auto;min-height:220px;max-height:52vh;flex:1;margin:0 -8px;padding:0 8px}
+.row{display:flex;align-items:center;gap:12px;padding:6px 6px 6px 4px;border-radius:16px}
+.row:hover{background:#f4f4f2}
+.row .ic{width:40px;height:40px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.row input{flex:1;min-width:0;border:0;background:transparent;font-family:var(--sans);font-size:17px;font-weight:600;color:var(--ink);padding:4px 0}
+.x{width:30px;height:30px;flex-shrink:0;border-radius:50%;border:0;background:transparent;cursor:pointer;font-size:18px;color:var(--faint);line-height:1}
+.x:hover{background:var(--ink);color:#fff}
+.add{flex:1;min-width:0;font-family:var(--sans);font-size:15px;padding:11px 16px;border:1.5px dashed var(--ink);border-radius:999px;background:#fff;color:var(--ink)}
+.addbtn{cursor:pointer;background:#fff;color:var(--ink);border:1.5px solid var(--ink);font-weight:600;font-size:15px;padding:0 18px;border-radius:999px}
+
+/* stage */
+.stage{background:var(--ink);color:#fff;border-radius:32px;position:relative;overflow:hidden;display:flex;flex-direction:column;min-height:640px}
+.stage .label{color:#a3a3a0}
+.stage-head{display:flex;justify-content:space-between;align-items:baseline;padding:26px 30px 0;gap:12px}
+.stage-body{flex:1;display:flex;align-items:center;justify-content:center;padding:20px 0}
+
+.reel{position:relative;width:100%;max-width:680px;height:450px}
+.reel-win{position:absolute;left:24px;right:24px;top:150px;height:150px;border-radius:28px;background:#1a1a1a}
+.arrow{position:absolute;top:207px;font-size:28px;line-height:1;color:#fff}
+.reel-mask{position:absolute;inset:0;overflow:hidden;-webkit-mask-image:linear-gradient(transparent,#000 32%,#000 68%,transparent);mask-image:linear-gradient(transparent,#000 32%,#000 68%,transparent)}
+.reel-row{height:150px;display:flex;align-items:center;gap:28px;padding:0 64px}
+.reel-row .ic{width:118px;height:118px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.reel-row span{font-size:52px;font-weight:800;letter-spacing:-.035em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:14px;width:100%;max-width:860px;padding:0 32px}
+.tile{aspect-ratio:1;border-radius:28px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+.tile .ic{width:78px;height:78px;display:flex;align-items:center;justify-content:center}
+.tile span{font-size:15px;font-weight:600;text-align:center;padding:0 8px}
+
+.foot{display:flex;flex-direction:column;align-items:center;gap:10px;padding:8px 30px 30px}
+.pick{cursor:pointer;border:0;background:#fff;color:var(--ink);font-weight:800;font-size:24px;letter-spacing:-.02em;padding:20px 56px;border-radius:999px;box-shadow:0 6px 0 #3a3a3a;transition:transform .1s}
+.pick:active{transform:translateY(4px);box-shadow:0 2px 0 #3a3a3a}
+.hint{font-family:var(--mono);font-size:12px;color:#8a8a87}
+
+.overlay{position:absolute;inset:0;background:rgba(11,11,11,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;transition:opacity .35s}
+.overlay .says{font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:#a3a3a0}
+.overlay .big{width:250px;height:250px;display:flex;align-items:center;justify-content:center;transition:transform .7s cubic-bezier(.34,1.56,.64,1)}
+.overlay .name{font-size:88px;font-weight:800;letter-spacing:-.045em;line-height:1;text-align:center;padding:0 24px}
+.overlay .acts{display:flex;gap:10px;margin-top:26px;flex-wrap:wrap;justify-content:center}
+.btn-w{cursor:pointer;border:0;background:#fff;color:var(--ink);font-weight:700;font-size:18px;padding:15px 30px;border-radius:999px}
+.btn-o{cursor:pointer;border:1.5px solid #fff;background:transparent;color:#fff;font-weight:700;font-size:18px;padding:15px 30px;border-radius:999px}
+.toast{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);background:#fff;color:var(--ink);font-family:var(--mono);font-size:13px;padding:10px 18px;border-radius:999px;white-space:nowrap}
+
+/* small screens: stack the panels (not in the prototype, needed for phones) */
+@media (max-width:820px){
+  .top{padding:18px 16px}
+  main{grid-template-columns:1fr;padding:0 16px 16px}
+  .reel-row{padding:0 40px;gap:16px}
+  .reel-row .ic{width:84px;height:84px}
+  .reel-row span{font-size:36px}
+  .overlay .big{width:180px;height:180px}
+  .overlay .name{font-size:56px}
+  .grid{padding:0 16px;grid-template-columns:repeat(auto-fill,minmax(104px,1fr))}
+}
+@media (prefers-reduced-motion:reduce){
+  .overlay,.overlay .big,.tile{transition:none!important}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/htm@3.1.1/dist/htm.umd.js"></script>
+<script>
+// Tweakable settings (the prototype exposed these as editor props).
+const CONFIG = { mode: 'reel', duration: 3.2, avoidRepeats: true };
+
+const html = htm.bind(React.createElement);
+const RAW = 'https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/';
+const srcOf = f => RAW + encodeURIComponent(f) + '/3D/' + f.toLowerCase().replace(/ /g, '_') + '_3d.png';
+
+// [display name, emoji fallback, Fluent emoji folder]
+const CATS = {
+  food: { label: 'Food', items: [['Pizza','🍕','Pizza'],['Burger','🍔','Hamburger'],['Sushi','🍣','Sushi'],['Tacos','🌮','Taco'],['Ramen','🍜','Steaming bowl'],['Hot dog','🌭','Hot dog'],['Fries','🍟','French fries'],['Burrito','🌯','Burrito'],['Croissant','🥐','Croissant'],['Pancakes','🥞','Pancakes'],['Curry','🍛','Curry rice'],['Salad','🥗','Green salad']] },
+  sweets: { label: 'Sweets', items: [['Donut','🍩','Doughnut'],['Cookie','🍪','Cookie'],['Cupcake','🧁','Cupcake'],['Lollipop','🍭','Lollipop'],['Chocolate','🍫','Chocolate bar'],['Cake','🎂','Birthday cake'],['Soft serve','🍦','Soft ice cream'],['Candy','🍬','Candy'],['Pudding','🍮','Custard'],['Shortcake','🍰','Shortcake']] },
+  animals: { label: 'Animals', items: [['Dog','🐶','Dog face'],['Cat','🐱','Cat face'],['Fox','🦊','Fox'],['Panda','🐼','Panda'],['Lion','🦁','Lion'],['Unicorn','🦄','Unicorn'],['Frog','🐸','Frog'],['Penguin','🐧','Penguin'],['Octopus','🐙','Octopus'],['Koala','🐨','Koala'],['Owl','🦉','Owl'],['Turtle','🐢','Turtle']] },
+  travel: { label: 'Travel', items: [['Beach','🏖️','Beach with umbrella'],['Camping','🏕️','Camping'],['Mt. Fuji','🗻','Mount fuji'],['Island','🏝️','Desert island'],['Sailing','⛵','Sailboat'],['Volcano','🌋','Volcano'],['Castle','🏰','Castle'],['Theme park','🎡','Ferris wheel'],['Rail trip','🚄','High-speed train'],['Space','🚀','Rocket']] },
+  activities: { label: 'Activities', items: [['Video games','🎮','Video game'],['Guitar','🎸','Guitar'],['Painting','🎨','Artist palette'],['Reading','📚','Books'],['Movie night','🎬','Clapper board'],['Karaoke','🎤','Microphone'],['Puzzle','🧩','Puzzle piece'],['Bowling','🎳','Bowling'],['Soccer','⚽','Soccer ball'],['Ping pong','🏓','Ping pong'],['Skating','🛹','Skateboard'],['Board games','🎲','Game die']] },
+};
+const KEYS = {
+  food: ['food','dinner','lunch','eat','meal','restaurant','breakfast','takeout','cuisine'],
+  sweets: ['sweet','dessert','candy','snack','treat','cake'],
+  animals: ['animal','pet','zoo','creature','spirit'],
+  travel: ['travel','trip','vacation','holiday','destination','getaway','place'],
+  activities: ['activit','weekend','hobby','hobbies','game','fun','bored','do tonight','date'],
+};
+const ALL = Object.values(CATS).flatMap(c => c.items);
+const MODES = [['reel', 'Slot reel'], ['shuffle', 'Shuffle'], ['spotlight', 'Spotlight']];
+const ROW = 150, REPS = 12;
+let uid = 1;
+const mk = list => list.map(t => ({ id: uid++, name: t[0], emoji: t[1], folder: t[2] }));
+const hueOf = s => { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+
+// Icon: Fluent 3D PNG → emoji → gradient letter bubble.
+function Icon({ it, size, shadow, failed, onFail }) {
+  const bad = !it.folder || failed[it.folder];
+  if (!bad) return html`<img src=${srcOf(it.folder)} alt="" onError=${() => onFail(it.folder)}
+    style=${{ width: '100%', height: '100%', objectFit: 'contain', filter: shadow ? 'drop-shadow(0 24px 30px rgba(0,0,0,.5))' : undefined }} />`;
+  if (it.emoji) return html`<span style=${{ fontSize: size * 0.8, lineHeight: 1 }}>${it.emoji}</span>`;
+  const h = hueOf(it.name || '?');
+  return html`<div style=${{
+    width: size * 0.85, height: size * 0.85, borderRadius: '50%',
+    background: `radial-gradient(circle at 32% 26%, rgba(255,255,255,.75) 0, rgba(255,255,255,0) 30%), linear-gradient(160deg, hsl(${h} 90% 62%), hsl(${(h + 40) % 360} 85% 45%))`,
+    display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800,
+    fontSize: size * 0.4, boxShadow: 'inset 0 -6px 14px rgba(0,0,0,.25)' }}>${(it.name || '?').trim().charAt(0).toUpperCase()}</div>`;
+}
+
+class App extends React.Component {
+  state = {
+    query: '', category: 'Food', catKey: 'food', items: mk(CATS.food.items),
+    mode: CONFIG.mode, phase: 'idle', winner: -1, last: -1, hl: -1,
+    reelIndex: CATS.food.items.length, reelAnim: false, jitter: null,
+    overlay: false, ovShow: false, pop: false, failed: {}, loading: false, loadingFor: '', err: '', newItem: '', toast: '',
+  };
+  timers = [];
+  later(fn, ms) { const t = setTimeout(fn, ms); this.timers.push(t); return t; }
+  clearTimers() { this.timers.forEach(clearTimeout); this.timers = []; clearInterval(this.iv); }
+  dur() { return CONFIG.duration * 1000; }
+
+  componentDidMount() {
+    this.onKey = e => {
+      const tag = (e.target.tagName || '').toLowerCase();
+      if (e.code === 'Space' && tag !== 'input' && tag !== 'textarea' && tag !== 'button') { e.preventDefault(); this.pick(); }
+      if (e.key === 'Escape' && this.state.overlay) this.closeOverlay();
+    };
+    window.addEventListener('keydown', this.onKey);
+  }
+  componentWillUnmount() { window.removeEventListener('keydown', this.onKey); this.clearTimers(); }
+
+  resetFor(items, extra) {
+    this.clearTimers();
+    this.setState({ items, phase: 'idle', winner: -1, last: -1, hl: -1, reelAnim: false, reelIndex: items.length, jitter: null, overlay: false, ovShow: false, pop: false, ...extra });
+  }
+  setMode(mode) {
+    if (this.state.phase === 'running') return;
+    this.clearTimers();
+    this.setState({ mode, phase: 'idle', hl: -1, jitter: null, overlay: false, ovShow: false, pop: false, reelAnim: false });
+  }
+  loadCat(key) { const c = CATS[key]; this.resetFor(mk(c.items), { category: c.label, catKey: key, err: '', query: '' }); }
+
+  async submitQuery(e) {
+    e && e.preventDefault();
+    const q = this.state.query.trim().toLowerCase();
+    if (!q) return;
+    const key = Object.keys(KEYS).find(k => k === q || KEYS[k].some(w => q.includes(w)));
+    if (key) return this.loadCat(key);
+    if (!(window.claude && window.claude.complete)) return this.setState({ err: 'Try one of the suggestions — or add your own options below.' });
+    const loadingFor = this.state.query.trim();
+    this.setState({ loading: true, loadingFor, err: '' });
+    try {
+      const out = await window.claude.complete(`Give 10 fun, distinct options for the category "${q}" that someone might randomly pick between. Each must be clearly represented by ONE standard Unicode emoji (no people, no flags). Return ONLY a JSON array like [{"name":"Short display name","emoji":"🍕","cldr":"official CLDR short name of that emoji, e.g. pizza"}].`);
+      const arr = JSON.parse(out.match(/\[[\s\S]*\]/)[0]);
+      const items = arr.filter(x => x && x.name).slice(0, 14).map(x => [x.name, x.emoji || '', cap(String(x.cldr || x.name).trim())]);
+      if (items.length < 2) throw new Error('few');
+      this.resetFor(mk(items), { category: loadingFor.charAt(0).toUpperCase() + loadingFor.slice(1), catKey: 'custom', loading: false, query: '' });
+    } catch {
+      this.setState({ loading: false, err: 'Couldn’t conjure that one — try another word or add options below.' });
+    }
+  }
+
+  addItem(e) {
+    e && e.preventDefault();
+    const n = this.state.newItem.trim();
+    if (!n) return;
+    const hit = ALL.find(t => t[0].toLowerCase() === n.toLowerCase() || t[2].toLowerCase() === n.toLowerCase());
+    const it = hit ? { id: uid++, name: n, emoji: hit[1], folder: hit[2] } : { id: uid++, name: n, emoji: '', folder: cap(n) };
+    this.resetFor([...this.state.items, it], { newItem: '' });
+  }
+  removeItem(id) { this.resetFor(this.state.items.filter(i => i.id !== id)); }
+  renameItem(id, name) { this.setState(s => ({ items: s.items.map(i => i.id === id ? { ...i, name } : i) })); }
+
+  pick() {
+    const { items, phase, mode, last, loading } = this.state;
+    const n = items.length;
+    if (n < 2 || phase === 'running' || loading) return;
+    this.clearTimers();
+    let w = Math.floor(Math.random() * n);
+    if (CONFIG.avoidRepeats && n > 2) while (w === last) w = Math.floor(Math.random() * n);
+    const D = this.dur();
+    this.setState({ phase: 'running', winner: w, overlay: false, ovShow: false, pop: false, hl: -1, jitter: null });
+
+    if (mode === 'reel') {
+      // Snap back to the 2nd repetition without animating, then spin to the 10th.
+      this.setState({ reelAnim: false, reelIndex: n + (this.state.reelIndex % n) });
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        this.setState({ reelAnim: true, reelIndex: 9 * n + w });
+        this.later(() => this.finish(), D + 80);
+      }));
+    } else if (mode === 'shuffle') {
+      const jig = () => this.setState({ jitter: items.map(() => ({ x: (Math.random() - .5) * 56, y: (Math.random() - .5) * 44, r: (Math.random() - .5) * 36, s: .88 + Math.random() * .3 })) });
+      jig();
+      this.iv = setInterval(jig, 130);
+      this.later(() => { clearInterval(this.iv); this.setState({ jitter: null }); this.finish(); }, D);
+    } else {
+      // Spotlight: hop tile to tile, decelerating (cubic) until landing on the winner.
+      const start = Math.max(0, this.state.hl);
+      const steps = 2 * n + ((w - start + n) % n || n);
+      const ws = Array.from({ length: steps }, (_, i) => 1 + 12 * Math.pow(i / steps, 3));
+      const W = ws.reduce((a, b) => a + b, 0);
+      let t = 0;
+      ws.forEach((wt, i) => { t += (wt / W) * D; this.later(() => this.setState({ hl: (start + i + 1) % n }), t); });
+      this.later(() => this.finish(), t + 60);
+    }
+  }
+  finish() {
+    this.setState(s => ({ phase: 'done', last: s.winner, hl: s.winner }));
+    this.later(() => this.setState({ overlay: true }), 650);
+    this.later(() => this.setState({ ovShow: true, pop: true }), 700);
+  }
+  closeOverlay() { this.setState({ overlay: false, ovShow: false, pop: false }); }
+  share() {
+    const w = this.state.items[this.state.winner];
+    if (!w) return;
+    const text = `🎲 eenie picked ${w.emoji ? w.emoji + ' ' : ''}${w.name} out of ${this.state.items.length} ${this.state.category.toLowerCase()} options.`;
+    const done = msg => { this.setState({ toast: msg }); this.later(() => this.setState({ toast: '' }), 2200); };
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => done('Copied — paste it anywhere'), () => done(text));
+    else done(text);
+  }
+  onFail = folder => { if (!this.state.failed[folder]) this.setState(s => ({ failed: { ...s.failed, [folder]: 1 } })); };
+
+  render() {
+    const s = this.state;
+    const n = s.items.length;
+    const running = s.phase === 'running', done = s.phase === 'done';
+    const icon = (it, size, shadow) => html`<${Icon} it=${it} size=${size} shadow=${shadow} failed=${s.failed} onFail=${this.onFail} />`;
+    const countLabel = `${n} option${n === 1 ? '' : 's'}`;
+    const pickLabel = n < 2 ? 'Add 2+ options' : running ? 'Picking…' : done ? 'Pick again' : 'Pick for me';
+    const w = s.items[s.winner];
+
+    const strip = [];
+    if (s.mode === 'reel' && n) for (let r = 0; r < REPS; r++) s.items.forEach((it, i) => strip.push(
+      html`<div class="reel-row" key=${r * n + i}><div class="ic">${icon(it, 118)}</div><span>${it.name}</span></div>`));
+
+    const tiles = s.items.map((it, i) => {
+      let bg = '#1a1a1a', fg = '#fff', tf = 'none', op = 1, tr = 'transform .45s cubic-bezier(.34,1.56,.64,1), opacity .4s, background .2s';
+      if (running && s.mode === 'shuffle' && s.jitter && s.jitter[i]) {
+        const j = s.jitter[i]; tf = `translate(${j.x}px,${j.y}px) rotate(${j.r}deg) scale(${j.s})`; tr = 'transform .13s ease-out';
+      } else if (running && s.mode === 'spotlight') {
+        if (i === s.hl) { bg = '#fff'; fg = '#0b0b0b'; tf = 'scale(1.08)'; }
+        tr = 'transform .12s, background .08s';
+      } else if (done) {
+        if (i === s.winner) { bg = '#fff'; fg = '#0b0b0b'; tf = 'scale(1.14)'; } else { op = .28; tf = 'scale(.9)'; }
+      }
+      return html`<div class="tile" key=${it.id} style=${{ background: bg, transform: tf, opacity: op, transition: tr }}>
+        <div class="ic">${icon(it, 78)}</div><span style=${{ color: fg }}>${it.name}</span></div>`;
+    });
+
+    return html`<div class="app">
+      <header class="top">
+        <div class="brand"><span class="logo">eenie.</span><span class="label">eeny, meeny, miny — you</span></div>
+        <div class="modes-wrap">
+          <span class="label">Pick style</span>
+          <div class="seg">${MODES.map(([k, label]) => html`<button key=${k} class=${s.mode === k ? 'on' : ''} onClick=${() => this.setMode(k)}>${label}</button>`)}</div>
+        </div>
+      </header>
+
+      <main>
+        <aside>
+          <div class="col" style=${{ gap: 14 }}>
+            <span class="label">01 — Category</span>
+            <h1>What are we picking?</h1>
+            <form onSubmit=${e => this.submitQuery(e)}>
+              <input class="q" value=${s.query} onChange=${e => this.setState({ query: e.target.value, err: '' })} placeholder="food, movies, chores…" />
+              <button class="go" type="submit">Go</button>
+            </form>
+            <div class="chips">${Object.keys(CATS).map(k => html`<button key=${k} class=${'chip' + (s.catKey === k ? ' on' : '')} onClick=${() => this.loadCat(k)}>${CATS[k].label}</button>`)}</div>
+            ${s.loading && html`<span class="status">Conjuring icons for “${s.loadingFor}”…</span>`}
+            ${s.err && html`<span class="status err">${s.err}</span>`}
+          </div>
+
+          <div class="rule"></div>
+
+          <div class="col" style=${{ gap: 10, flex: 1 }}>
+            <div style=${{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+              <span class="label">02 — Options</span>
+              <span class="label" style=${{ textTransform: 'none', letterSpacing: 0 }}>${countLabel}</span>
+            </div>
+            <div class="list">${s.items.map(it => html`<div class="row" key=${it.id}>
+              <div class="ic">${icon(it, 40)}</div>
+              <input value=${it.name} onChange=${e => this.renameItem(it.id, e.target.value)} />
+              <button class="x" title="Remove" onClick=${() => this.removeItem(it.id)}>×</button>
+            </div>`)}</div>
+            <form onSubmit=${e => this.addItem(e)}>
+              <input class="add" value=${s.newItem} onChange=${e => this.setState({ newItem: e.target.value })} placeholder="Add your own option" />
+              <button class="addbtn" type="submit">Add</button>
+            </form>
+          </div>
+        </aside>
+
+        <section class="stage">
+          <div class="stage-head"><span class="label">03 — Pick</span><span class="label">${s.category} · ${countLabel}</span></div>
+
+          <div class="stage-body">
+            ${s.mode === 'reel' ? html`<div class="reel">
+              <div class="reel-win"></div>
+              <div class="arrow" style=${{ left: 0 }}>▸</div>
+              <div class="arrow" style=${{ right: 0 }}>◂</div>
+              <div class="reel-mask"><div style=${{
+                transform: `translateY(${-(s.reelIndex - 1) * ROW}px)`,
+                transition: s.reelAnim ? `transform ${this.dur() / 1000}s cubic-bezier(.12,.82,.22,1.02)` : 'none' }}>${strip}</div></div>
+            </div>` : html`<div class="grid">${tiles}</div>`}
+          </div>
+
+          <div class="foot">
+            <button class="pick" style=${{ opacity: n < 2 || running ? .45 : 1 }} onClick=${() => this.pick()}>${pickLabel}</button>
+            <span class="hint">or press space</span>
+          </div>
+
+          ${s.overlay && w && html`<div class="overlay" style=${{ opacity: s.ovShow ? 1 : 0 }} onClick=${() => this.closeOverlay()}>
+            <span class="says">The universe says</span>
+            <div class="big" style=${{ transform: s.pop ? 'scale(1) rotate(0deg)' : 'scale(.3) rotate(-14deg)' }}>${icon(w, 250, true)}</div>
+            <span class="name">${w.name}</span>
+            <div class="acts" onClick=${e => e.stopPropagation()}>
+              <button class="btn-w" onClick=${() => this.share()}>Share result</button>
+              <button class="btn-o" onClick=${() => { this.closeOverlay(); this.later(() => this.pick(), 60); }}>Pick again</button>
+            </div>
+          </div>`}
+
+          ${s.toast && html`<div class="toast">${s.toast}</div>`}
+        </section>
+      </main>
+    </div>`;
+  }
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(html`<${App} />`);
+</script>
+</body>
+</html>
